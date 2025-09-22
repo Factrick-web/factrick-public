@@ -2,6 +2,8 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
 local humanoid = player.Character:WaitForChild("Humanoid")
 
@@ -204,7 +206,7 @@ infoCornerFrame.CornerRadius = UDim.new(0,6)
 infoCornerFrame.Parent = infoFrame
 
 local infoText = Instance.new("TextLabel")
-infoText.Text = "🎮 Factrick Cheat\n👤 Creador: @castillo_Fx4\n⚡ Version: 1.0\n💡 Usa con cuidado\n\n📌 Creadores de contenido:\n@tradeos.brainrotslzv"
+infoText.Text = "🎮 Factrick Cheat\n👤 Creador: @castillo_Fx4\n⚡ Version: 1.0\n💡 Usa con cuidado\n\n📌 Creadores de contenido:\n@tradeos.brainrotslzv\n@subass2\n@brainrotscripts2"
 infoText.Size = UDim2.new(1,-10,1,-10)
 infoText.Position = UDim2.new(0,5,0,5)
 infoText.BackgroundTransparency = 1
@@ -466,6 +468,36 @@ createButton("No Clip", Color3.fromRGB(255,105,180), function(state)
             end
         end
     end)
+end)
+
+-- ✅ Serverhop
+createButton("Serverhop", Color3.fromRGB(0,191,255), function(state)
+    if state then
+        task.spawn(function()
+            local servers = {}
+            local cursor = ""
+            local placeId = game.PlaceId
+            local jobId = game.JobId
+            local function fetchServers()
+                local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"..(cursor ~= "" and "&cursor="..cursor or "")
+                local response = game:HttpGet(url)
+                return HttpService:JSONDecode(response)
+            end
+            local found = false
+            repeat
+                local data = fetchServers()
+                for _,srv in ipairs(data.data) do
+                    if srv.playing < srv.maxPlayers and srv.id ~= jobId then
+                        TeleportService:TeleportToPlaceInstance(placeId, srv.id, player)
+                        found = true
+                        break
+                    end
+                end
+                cursor = data.nextPageCursor or ""
+                task.wait(0.5)
+            until found or cursor == ""
+        end)
+    end
 end)
 
 -- Abrir panel
