@@ -422,102 +422,89 @@ createButton("ESP Players", Color3.fromRGB(220,20,60), function(state)
                         for _,part in pairs(plr.Character:GetChildren()) do
                             if part:IsA("BasePart") then
                                 local adorn = Instance.new("BoxHandleAdornment")
-                                adorn.Name="ESPPart"
-                                adorn.Adornee=part
                                 adorn.Size=part.Size
-                                adorn.Color3=Color3.fromHSV(tick()%5/5,1,1)
+                                adorn.Adornee=part
                                 adorn.AlwaysOnTop=true
+                                adorn.ZIndex=0
                                 adorn.Transparency=0.5
-                                adorn.ZIndex=5
+                                adorn.Color3=Color3.fromHSV(tick()%5/5,1,1)
                                 adorn.Parent=part
+                            end
+                        end
+                    else
+                        local esp=plr.Character.ESP
+                        for _,obj in pairs(esp:GetChildren()) do
+                            if obj:IsA("TextLabel") then
+                                obj.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
+                            end
+                        end
+                        for _,part in pairs(plr.Character:GetChildren()) do
+                            for _,ad in pairs(part:GetChildren()) do
+                                if ad:IsA("BoxHandleAdornment") then
+                                    ad.Color3=Color3.fromHSV(tick()%5/5,1,1)
+                                end
                             end
                         end
                     end
                 end
             end
-            task.wait(0.5)
+            task.wait(0.2)
         end
         for _,plr in pairs(Players:GetPlayers()) do
+            if plr.Character and plr.Character:FindFirstChild("ESP") then
+                plr.Character.ESP:Destroy()
+            end
             if plr.Character then
-                if plr.Character:FindFirstChild("ESP") then plr.Character.ESP:Destroy() end
                 for _,part in pairs(plr.Character:GetChildren()) do
-                    if part:FindFirstChild("ESPPart") then part.ESPPart:Destroy() end
+                    for _,ad in pairs(part:GetChildren()) do
+                        if ad:IsA("BoxHandleAdornment") then ad:Destroy() end
+                    end
                 end
             end
         end
     end)
 end)
 
--- No Clip
-createButton("No Clip", Color3.fromRGB(255,105,180), function(state)
+-- Noclip
+createButton("Noclip", Color3.fromRGB(255,69,0), function(state)
     noclipEnabled = state
     task.spawn(function()
         while noclipEnabled do
-            local char = player.Character
-            if char then
-                for _,part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide=false end
-                end
+            for _,v in pairs(player.Character:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide=false end
             end
-            task.wait(0.1)
-        end
-        local char = player.Character
-        if char then
-            for _,part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide=true end
-            end
+            task.wait()
         end
     end)
 end)
 
--- ✅ Serverhop
+-- ✅ Serverhop (corregido sin error 773)
 createButton("Serverhop", Color3.fromRGB(0,191,255), function(state)
     if state then
-        task.spawn(function()
-            local servers = {}
-            local cursor = ""
-            local placeId = game.PlaceId
-            local jobId = game.JobId
-            local function fetchServers()
-                local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"..(cursor ~= "" and "&cursor="..cursor or "")
-                local response = game:HttpGet(url)
-                return HttpService:JSONDecode(response)
-            end
-            local found = false
-            repeat
-                local data = fetchServers()
-                for _,srv in ipairs(data.data) do
-                    if srv.playing < srv.maxPlayers and srv.id ~= jobId then
-                        TeleportService:TeleportToPlaceInstance(placeId, srv.id, player)
-                        found = true
-                        break
-                    end
-                end
-                cursor = data.nextPageCursor or ""
-                task.wait(0.5)
-            until found or cursor == ""
-        end)
+        local placeId = game.PlaceId
+        TeleportService:Teleport(placeId, player)
+    end
+end)
+
+-- Key confirmación
+local correctKey="keygratis1"
+keyBtn.MouseButton1Click:Connect(function()
+    if keyBox.Text==correctKey then
+        keyFrame.Visible=false
+        loadingFrame.Visible=true
+        for i=1,100 do
+            barFill.Size=UDim2.new(i/100,0,1,0)
+            task.wait(0.02)
+        end
+        loadingFrame.Visible=false
+        mainBtn.Visible=true
+    else
+        keyBox.Text="❌ Incorrecta!"
+        task.delay(1,function() keyBox.Text="" end)
     end
 end)
 
 -- Abrir panel
 mainBtn.MouseButton1Click:Connect(function()
-    frame.Visible = not frame.Visible
-end)
-
--- Confirmar Key
-keyBtn.MouseButton1Click:Connect(function()
-    if keyBox.Text=="keygratis1" then
-        keyFrame.Visible=false
-        loadingFrame.Visible=true
-        for i=0,1,0.02 do
-            barFill.Size=UDim2.new(i,0,1,0)
-            task.wait(0.03)
-        end
-        loadingFrame.Visible=false
-        mainBtn.Visible=true
-    else
-        keyBox.Text=""
-        keyBox.PlaceholderText="❌ Key incorrecta"
-    end
+    frame.Visible=not frame.Visible
 end)
