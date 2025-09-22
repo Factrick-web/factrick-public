@@ -11,17 +11,21 @@ local jumpEnabled = false
 local floatEnabled = false
 local espEnabled = false
 local noclipEnabled = false
-local savedPos = nil
 local floatPart = nil
+local floatGuiBtn = nil
+
+-- Colores Float
+local floatColorMode = "RGB"
+local floatFixedColor = Color3.fromRGB(70,130,180)
+local floatGradientColor1 = Color3.fromRGB(70,130,180)
+local floatGradientColor2 = Color3.fromRGB(138,43,226)
 
 -- GUI principal
 local gui = Instance.new("ScreenGui")
 gui.Parent = game.CoreGui
 gui.ResetOnSpawn = false
 
------------------------------------------------------
 -- Pantalla Key
------------------------------------------------------
 local keyFrame = Instance.new("Frame")
 keyFrame.Size = UDim2.new(0,280,0,140)
 keyFrame.Position = UDim2.new(0.5,-140,0.5,-70)
@@ -103,9 +107,7 @@ local barFillCorner = Instance.new("UICorner")
 barFillCorner.CornerRadius = UDim.new(0,8)
 barFillCorner.Parent = barFill
 
------------------------------------------------------
--- Panel flotante compacto
------------------------------------------------------
+-- Panel flotante
 local mainBtn = Instance.new("TextButton")
 mainBtn.Size = UDim2.new(0,140,0,35)
 mainBtn.Position = UDim2.new(0.05,0,0.2,0)
@@ -123,7 +125,7 @@ btnCorner.CornerRadius = UDim.new(0,10)
 btnCorner.Parent = mainBtn
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,200,0,280)
+frame.Size = UDim2.new(0,220,0,300)
 frame.Position = UDim2.new(0.3,0,0.2,0)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.BorderSizePixel = 0
@@ -150,39 +152,79 @@ task.spawn(function()
     end
 end)
 
-local tiktok = Instance.new("TextLabel")
-tiktok.Text = "@castillo_Fx4"
-tiktok.Size = UDim2.new(1,0,0,18)
-tiktok.Position = UDim2.new(0,0,0,30)
-tiktok.TextColor3 = Color3.fromRGB(200,200,200)
-tiktok.TextSize = 12
-tiktok.BackgroundTransparency = 1
-tiktok.Font = Enum.Font.Gotham
-tiktok.TextXAlignment = Enum.TextXAlignment.Center
-tiktok.Parent = frame
+-- Botones de sección
+local generalBtn = Instance.new("TextButton")
+generalBtn.Text = "General"
+generalBtn.Size = UDim2.new(0.5,-2,0,25)
+generalBtn.Position = UDim2.new(0,0,0,35)
+generalBtn.BackgroundColor3 = Color3.fromRGB(70,130,180)
+generalBtn.TextColor3 = Color3.fromRGB(255,255,255)
+generalBtn.Font = Enum.Font.GothamBold
+generalBtn.TextSize = 14
+generalBtn.Parent = frame
+local generalCorner = Instance.new("UICorner")
+generalCorner.CornerRadius = UDim.new(0,6)
+generalCorner.Parent = generalBtn
 
--- Scrolling para botones
-local scrolling = Instance.new("ScrollingFrame")
-scrolling.Size = UDim2.new(1,-10,1,-55)
-scrolling.Position = UDim2.new(0,5,0,50)
-scrolling.CanvasSize = UDim2.new(0,0,6,0)
-scrolling.ScrollBarThickness = 6
-scrolling.BackgroundTransparency = 1
-scrolling.Parent = frame
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0,5)
-layout.Parent = scrolling
+local infoBtn = Instance.new("TextButton")
+infoBtn.Text = "Info"
+infoBtn.Size = UDim2.new(0.5,-2,0,25)
+infoBtn.Position = UDim2.new(0.5,2,0,35)
+infoBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
+infoBtn.TextColor3 = Color3.fromRGB(255,255,255)
+infoBtn.Font = Enum.Font.GothamBold
+infoBtn.TextSize = 14
+infoBtn.Parent = frame
+local infoCorner = Instance.new("UICorner")
+infoCorner.CornerRadius = UDim.new(0,6)
+infoCorner.Parent = infoBtn
 
--- Función para crear botones ON/OFF
+-- Contenedor
+local generalFrame = Instance.new("ScrollingFrame")
+generalFrame.Size = UDim2.new(1,-10,1,-65)
+generalFrame.Position = UDim2.new(0,5,0,65)
+generalFrame.CanvasSize = UDim2.new(0,0,6,0)
+generalFrame.ScrollBarThickness = 6
+generalFrame.BackgroundTransparency = 1
+generalFrame.Visible = true
+generalFrame.Parent = frame
+local generalLayout = Instance.new("UIListLayout")
+generalLayout.Padding = UDim.new(0,5)
+generalLayout.Parent = generalFrame
+
+local infoFrame = Instance.new("Frame")
+infoFrame.Size = UDim2.new(1,-10,1,-65)
+infoFrame.Position = UDim2.new(0,5,0,65)
+infoFrame.BackgroundTransparency = 0.1
+infoFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+infoFrame.Visible = false
+infoFrame.Parent = frame
+local infoCornerFrame = Instance.new("UICorner")
+infoCornerFrame.CornerRadius = UDim.new(0,6)
+infoCornerFrame.Parent = infoFrame
+
+local infoText = Instance.new("TextLabel")
+infoText.Text = "🎮 Factrick Cheat\n👤 Creador: @castillo_Fx4\n⚡ Version: 1.0\n💡 Usa con cuidado\n\n📌 Creadores de contenido:\n@tradeos.brainrotslzv"
+infoText.Size = UDim2.new(1,-10,1,-10)
+infoText.Position = UDim2.new(0,5,0,5)
+infoText.BackgroundTransparency = 1
+infoText.TextColor3 = Color3.fromRGB(200,200,200)
+infoText.Font = Enum.Font.Gotham
+infoText.TextSize = 14
+infoText.TextWrapped = true
+infoText.TextYAlignment = Enum.TextYAlignment.Top
+infoText.Parent = infoFrame
+
+-- Función para crear botones de hacks
 local function createButton(name,color,callback)
     local btn = Instance.new("TextButton")
     btn.Text = name.." (OFF)"
-    btn.Size = UDim2.new(1,-10,0,35)
+    btn.Size = UDim2.new(1,0,0,30)
     btn.BackgroundColor3 = color
     btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.TextSize = 14
     btn.Font = Enum.Font.GothamBold
-    btn.Parent = scrolling
+    btn.TextSize = 14
+    btn.Parent = generalFrame
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0,6)
     corner.Parent = btn
@@ -203,23 +245,21 @@ local function createButton(name,color,callback)
     end)
 end
 
--- Botón flotante independiente (inicialmente oculto)
-local floatBtn = Instance.new("TextButton")
-floatBtn.Size = UDim2.new(0,120,0,30)
-floatBtn.Position = UDim2.new(0.5,-60,0.5,100)
-floatBtn.BackgroundColor3 = Color3.fromRGB(60,179,113)
-floatBtn.TextColor3 = Color3.fromRGB(255,255,255)
-floatBtn.Text = "Float (OFF)"
-floatBtn.Font = Enum.Font.GothamBold
-floatBtn.TextSize = 14
-floatBtn.Active = true
-floatBtn.Draggable = true
-floatBtn.Visible = false
-floatBtn.Parent = gui
-local floatCorner = Instance.new("UICorner")
-floatCorner.CornerRadius = UDim.new(0,6)
-floatCorner.Parent = floatBtn
-local floatBtnEnabled = false
+-- Conexión pestañas
+generalBtn.MouseButton1Click:Connect(function()
+    generalFrame.Visible = true
+    infoFrame.Visible = false
+    generalBtn.BackgroundColor3 = Color3.fromRGB(70,130,180)
+    infoBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
+end)
+infoBtn.MouseButton1Click:Connect(function()
+    generalFrame.Visible = false
+    infoFrame.Visible = true
+    infoBtn.BackgroundColor3 = Color3.fromRGB(70,130,180)
+    generalBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
+end)
+
+-- Hacks
 
 -- Speed
 createButton("Speed", Color3.fromRGB(70,130,180), function(state)
@@ -236,12 +276,11 @@ createButton("Speed", Color3.fromRGB(70,130,180), function(state)
     end
 end)
 
--- High Jump ON/OFF
+-- High Jump
 createButton("High Jump", Color3.fromRGB(138,43,226), function(state)
     jumpEnabled = state
 end)
 
--- Detectar input para salto
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if jumpEnabled then
@@ -255,49 +294,104 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Float desde panel
+-- Float con botón flotante y colores
+local function createFloatButton()
+    if floatGuiBtn then return end
+    floatGuiBtn = Instance.new("TextButton")
+    floatGuiBtn.Size = UDim2.new(0,80,0,30)
+    floatGuiBtn.Position = UDim2.new(0.5,-40,0.5,-15)
+    floatGuiBtn.Text = "Float OFF"
+    floatGuiBtn.BackgroundColor3 = Color3.fromRGB(70,130,180)
+    floatGuiBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    floatGuiBtn.Font = Enum.Font.GothamBold
+    floatGuiBtn.TextSize = 14
+    floatGuiBtn.Parent = gui
+    floatGuiBtn.Active = true
+    floatGuiBtn.Draggable = true
+
+    local toggled = false
+    floatGuiBtn.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        floatEnabled = toggled
+        floatGuiBtn.Text = toggled and "Float ON" or "Float OFF"
+    end)
+end
+
 createButton("Float", Color3.fromRGB(60,179,113), function(state)
     if state then
-        floatBtn.Visible = true
-        floatBtn.Text = "Float (OFF)"
-        floatBtnEnabled = false
+        createFloatButton()
     else
-        floatBtn.Visible = false
         floatEnabled = false
-        if floatPart then floatPart:Destroy() end
+        if floatGuiBtn then floatGuiBtn:Destroy() floatGuiBtn=nil end
+        if floatPart then floatPart:Destroy() floatPart=nil end
     end
 end)
 
--- Lógica del botón flotante
-floatBtn.MouseButton1Click:Connect(function()
-    floatBtnEnabled = not floatBtnEnabled
-    floatEnabled = floatBtnEnabled
-    if floatBtnEnabled then
-        floatBtn.Text = "Float (ON)"
-        local root = player.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            floatPart = Instance.new("Part")
-            floatPart.Name = "FloatPlatform"
-            floatPart.Size = Vector3.new(6,1,6)
-            floatPart.Anchored = true
-            floatPart.Transparency = 1
-            floatPart.CanCollide = true
-            floatPart.Parent = workspace
-            task.spawn(function()
-                while floatEnabled and root do
-                    floatPart.CFrame = CFrame.new(root.Position.X, root.Position.Y-3, root.Position.Z)
-                    task.wait(0.05)
+task.spawn(function()
+    while task.wait(0.05) do
+        if floatEnabled then
+            local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                if not floatPart then
+                    floatPart = Instance.new("Part")
+                    floatPart.Size = Vector3.new(6,1,6)
+                    floatPart.Anchored = true
+                    floatPart.CanCollide = true
+                    floatPart.Parent = workspace
+                    floatPart.Material = Enum.Material.SmoothPlastic
+                    floatPart.Transparency = 0.5
                 end
-                if floatPart then floatPart:Destroy() end
-            end)
+                floatPart.CFrame = CFrame.new(root.Position.X, root.Position.Y-3, root.Position.Z)
+
+                -- Color dinámico
+                if floatColorMode == "RGB" then
+                    floatPart.Color = Color3.fromHSV(tick()%5/5,1,1)
+                elseif floatColorMode == "Fijo" then
+                    floatPart.Color = floatFixedColor
+                elseif floatColorMode == "Degradado" then
+                    local t = (math.sin(tick())+1)/2
+                    floatPart.Color = floatGradientColor1:lerp(floatGradientColor2,t)
+                end
+            end
+        else
+            if floatPart then 
+                floatPart:Destroy() 
+                floatPart=nil 
+            end
+        end
+    end
+end)
+
+-- FPS Booting con AntiLag
+createButton("FPS Booting", Color3.fromRGB(255,165,0), function(state)
+    if state then
+        if setfpscap then setfpscap(360) end
+        for _,plr in pairs(Players:GetPlayers()) do
+            if plr.Character then
+                for _,part in pairs(plr.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.Material = Enum.Material.SmoothPlastic
+                        part.Reflectance = 0
+                    end
+                end
+            end
         end
     else
-        floatBtn.Text = "Float (OFF)"
-        if floatPart then floatPart:Destroy() end
+        if setfpscap then setfpscap(60) end
+        for _,plr in pairs(Players:GetPlayers()) do
+            if plr.Character then
+                for _,part in pairs(plr.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.Material = Enum.Material.Plastic
+                        part.Reflectance = 0
+                    end
+                end
+            end
+        end
     end
 end)
 
--- ESP RGB con nombre
+-- ESP Players
 createButton("ESP Players", Color3.fromRGB(220,20,60), function(state)
     espEnabled = state
     task.spawn(function()
@@ -324,7 +418,7 @@ createButton("ESP Players", Color3.fromRGB(220,20,60), function(state)
                         txt.Parent=bb
 
                         for _,part in pairs(plr.Character:GetChildren()) do
-                            if part:IsA("BasePart") and not part:FindFirstChild("ESPPart") then
+                            if part:IsA("BasePart") then
                                 local adorn = Instance.new("BoxHandleAdornment")
                                 adorn.Name="ESPPart"
                                 adorn.Adornee=part
@@ -350,20 +444,6 @@ createButton("ESP Players", Color3.fromRGB(220,20,60), function(state)
             end
         end
     end)
-end)
-
--- Save / Go Position
-createButton("Save Pos", Color3.fromRGB(255,140,0), function(state)
-    if state then
-        local root = player.Character:FindFirstChild("HumanoidRootPart")
-        if root then savedPos = root.CFrame end
-    end
-end)
-createButton("Go Pos", Color3.fromRGB(255,215,0), function(state)
-    if state and savedPos then
-        local root = player.Character:FindFirstChild("HumanoidRootPart")
-        if root then root.CFrame = savedPos end
-    end
 end)
 
 -- No Clip
@@ -393,7 +473,7 @@ mainBtn.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
 
--- Confirmar Key con pantalla de carga
+-- Confirmar Key
 keyBtn.MouseButton1Click:Connect(function()
     if keyBox.Text=="keygratis1" then
         keyFrame.Visible=false
