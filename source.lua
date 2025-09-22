@@ -478,12 +478,10 @@ createButton("Noclip", Color3.fromRGB(255,69,0), function(state)
     end)
 end)
 
--- Serverhop corregido
-createButton("Serverhop", Color3.fromRGB(0,191,255), function(state)
-    if state then
-        local placeId = game.PlaceId
-        TeleportService:Teleport(placeId, player) -- evita error 773
-    end
+-- ✅ Serverhop directo (sin ON/OFF)
+createButton("Serverhop", Color3.fromRGB(0,191,255), function()
+    local placeId = game.PlaceId
+    TeleportService:Teleport(placeId, player)
 end)
 
 -- Key confirmación
