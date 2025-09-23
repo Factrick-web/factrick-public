@@ -15,6 +15,16 @@ local espEnabled = false
 local noclipEnabled = false
 local floatPart = nil
 local floatGuiBtn = nil
+local timeBaseEnabled = false
+
+-- Datos para Time Base (para mantener conexiones/estado entre ON/OFF)
+local timeBaseData = {
+    espMap = {},
+    connAdded = nil,
+    connRemoved = nil,
+    renderConn = nil,
+    PLOTS_FOLDER = nil
+}
 
 -- Colores Float
 local floatColorMode = "RGB"
@@ -419,30 +429,22 @@ createButton("ESP Players", Color3.fromRGB(220,20,60), function(state)
                         txt.TextScaled=true
                         txt.Parent=bb
 
-                        for _,part in pairs(plr.Character:GetChildren()) do
-                            if part:IsA("BasePart") then
-                                local adorn = Instance.new("BoxHandleAdornment")
-                                adorn.Size=part.Size
-                                adorn.Adornee=part
-                                adorn.AlwaysOnTop=true
-                                adorn.ZIndex=0
-                                adorn.Transparency=0.5
-                                adorn.Color3=Color3.fromHSV(tick()%5/5,1,1)
-                                adorn.Parent=part
+                        for _,p in pairs(plr.Character:GetDescendants()) do
+                            if p:IsA("BasePart") then
+                                local box = Instance.new("BoxHandleAdornment")
+                                box.Adornee=p
+                                box.AlwaysOnTop=true
+                                box.ZIndex=0
+                                box.Size=p.Size
+                                box.Transparency=0.5
+                                box.Color3=Color3.fromHSV(tick()%5/5,1,1)
+                                box.Parent=p
                             end
                         end
                     else
-                        local esp=plr.Character.ESP
-                        for _,obj in pairs(esp:GetChildren()) do
-                            if obj:IsA("TextLabel") then
-                                obj.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
-                            end
-                        end
-                        for _,part in pairs(plr.Character:GetChildren()) do
-                            for _,ad in pairs(part:GetChildren()) do
-                                if ad:IsA("BoxHandleAdornment") then
-                                    ad.Color3=Color3.fromHSV(tick()%5/5,1,1)
-                                end
+                        for _,desc in pairs(plr.Character.ESP:GetChildren()) do
+                            if desc:IsA("TextLabel") then
+                                desc.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
                             end
                         end
                     end
@@ -454,55 +456,197 @@ createButton("ESP Players", Color3.fromRGB(220,20,60), function(state)
             if plr.Character and plr.Character:FindFirstChild("ESP") then
                 plr.Character.ESP:Destroy()
             end
-            if plr.Character then
-                for _,part in pairs(plr.Character:GetChildren()) do
-                    for _,ad in pairs(part:GetChildren()) do
-                        if ad:IsA("BoxHandleAdornment") then ad:Destroy() end
-                    end
+        end
+    end)
+end)
+
+-- ✅ NUEVO BOTÓN TIME BASE (ahora usa la lógica completa del ESP RGB que mandaste, sin UI extra)
+createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
+    timeBaseEnabled = state
+
+    -- Si se apaga: limpiar todo (con desconexión de eventos)
+    if not state then
+        -- desconectar render
+        if timeBaseData.renderConn and timeBaseData.renderConn.Connected then
+            timeBaseData.renderConn:Disconnect()
+        end
+        -- desconectar child events
+        if timeBaseData.connAdded and timeBaseData.connAdded.Connected then
+            timeBaseData.connAdded:Disconnect()
+        end
+        if timeBaseData.connRemoved and timeBaseData.connRemoved.Connected then
+            timeBaseData.connRemoved:Disconnect()
+        end
+        -- destruir billboards creados
+        for plot,info in pairs(timeBaseData.espMap) do
+            if info and info.billboard and info.billboard.Parent then
+                pcall(function() info.billboard:Destroy() end)
+            end
+            timeBaseData.espMap[plot] = nil
+        end
+        -- reset
+        timeBaseData = { espMap = {}, connAdded = nil, connRemoved = nil, renderConn = nil, PLOTS_FOLDER = nil }
+        return
+    end
+
+    -- Si se enciende: inicializar
+    timeBaseData.PLOTS_FOLDER = workspace:FindFirstChild("Plots")
+    local PLOTS_FOLDER = timeBaseData.PLOTS_FOLDER
+    local espMap = timeBaseData.espMap
+
+    -- Funciones (idénticas a las de tu script ESP independiente)
+    local function findHitbox(plot)
+        local candidate = plot:FindFirstChild("Hitbox", true)
+        if candidate then return candidate end
+        for _, d in ipairs(plot:GetDescendants()) do
+            if d:IsA("BasePart") and d.Name:lower():find("hit") then
+                return d
+            end
+        end
+        return nil
+    end
+
+    local function findRemainingLabel(plot)
+        for _, d in ipairs(plot:GetDescendants()) do
+            if d:IsA("TextLabel") and d.Name:lower():find("remaining") then
+                return d
+            end
+        end
+        return nil
+    end
+
+    local function createESPFor(plot)
+        if not plot or espMap[plot] then return end
+
+        local hitbox = findHitbox(plot)
+        local sourceLabel = findRemainingLabel(plot)
+
+        if not hitbox then
+            return
+        end
+
+        local bb = Instance.new("BillboardGui")
+        bb.Name = "ESP_RemainingTime"
+        bb.Size = UDim2.new(0,150,0,60)
+        bb.Adornee = hitbox
+        bb.AlwaysOnTop = true
+        bb.LightInfluence = 0
+        bb.StudsOffset = Vector3.new(0, 3.2, 0)
+        bb.Parent = hitbox
+
+        local timeLabel = Instance.new("TextLabel", bb)
+        timeLabel.Size = UDim2.new(1,0,0.7,0)
+        timeLabel.Position = UDim2.new(0,0,0.15,0)
+        timeLabel.BackgroundTransparency = 1
+        timeLabel.Font = Enum.Font.SourceSansBold
+        timeLabel.TextScaled = true
+        timeLabel.Text = "0s"
+        timeLabel.TextStrokeTransparency = 0
+        timeLabel.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+        timeLabel.TextColor3 = Color3.fromRGB(255,255,255)
+
+        local hueOffset = math.random()
+        espMap[plot] = {
+            billboard = bb,
+            timeLabel = timeLabel,
+            sourceLabel = sourceLabel,
+            hueOffset = hueOffset
+        }
+    end
+
+    local function removeESPFor(plot)
+        local info = espMap[plot]
+        if not info then return end
+        if info.billboard and info.billboard.Parent then
+            pcall(function() info.billboard:Destroy() end)
+        end
+        espMap[plot] = nil
+    end
+
+    local function collectAll()
+        for plot, info in pairs(espMap) do
+            if not plot.Parent then
+                removeESPFor(plot)
+            end
+        end
+
+        if not PLOTS_FOLDER then
+            PLOTS_FOLDER = workspace:FindFirstChild("Plots")
+            timeBaseData.PLOTS_FOLDER = PLOTS_FOLDER
+        end
+        if not PLOTS_FOLDER then return end
+        for _, plot in ipairs(PLOTS_FOLDER:GetChildren()) do
+            createESPFor(plot)
+        end
+    end
+
+    -- iniciar colección
+    collectAll()
+
+    -- conectar observadores
+    if PLOTS_FOLDER then
+        timeBaseData.connAdded = PLOTS_FOLDER.ChildAdded:Connect(function(child)
+            task.wait(0.15)
+            createESPFor(child)
+        end)
+        timeBaseData.connRemoved = PLOTS_FOLDER.ChildRemoved:Connect(function(child)
+            removeESPFor(child)
+        end)
+    end
+
+    -- RenderStepped: actualización de texto y color (RGB arcoíris)
+    timeBaseData.renderConn = RunService.RenderStepped:Connect(function()
+        local now = tick()
+        for plot, info in pairs(espMap) do
+            if info and info.timeLabel then
+                local txt = "0s"
+                if info.sourceLabel and info.sourceLabel.Parent then
+                    pcall(function()
+                        local s = info.sourceLabel.Text
+                        if s and #s > 0 then txt = s end
+                    end)
                 end
+                -- asigna texto
+                pcall(function() info.timeLabel.Text = txt end)
+
+                -- color arcoíris
+                local hueSpeed = 0.15
+                local hue = (now * hueSpeed + (info.hueOffset or 0)) % 1
+                local color = Color3.fromHSV(hue, 1, 1)
+                pcall(function()
+                    info.timeLabel.TextColor3 = color
+                    info.timeLabel.TextStrokeColor3 = Color3.new(0,0,0)
+                end)
             end
         end
     end)
 end)
 
--- Noclip
-createButton("Noclip", Color3.fromRGB(255,69,0), function(state)
-    noclipEnabled = state
-    task.spawn(function()
-        while noclipEnabled do
-            for _,v in pairs(player.Character:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide=false end
-            end
-            task.wait()
-        end
-    end)
-end)
-
--- ✅ Serverhop directo (sin ON/OFF)
+-- ✅ Serverhop directo
 createButton("Serverhop", Color3.fromRGB(0,191,255), function()
     local placeId = game.PlaceId
     TeleportService:Teleport(placeId, player)
 end)
 
--- Key confirmación
-local correctKey="keygratis1"
+-- KeyCheck
+local KEY="keygratis1"
 keyBtn.MouseButton1Click:Connect(function()
-    if keyBox.Text==correctKey then
+    if keyBox.Text==KEY then
         keyFrame.Visible=false
         loadingFrame.Visible=true
         for i=1,100 do
             barFill.Size=UDim2.new(i/100,0,1,0)
-            task.wait(0.02)
+            task.wait(0.03)
         end
         loadingFrame.Visible=false
         mainBtn.Visible=true
     else
-        keyBox.Text="❌ Incorrecta!"
-        task.delay(1,function() keyBox.Text="" end)
+        keyBox.Text=""
+        keyBox.PlaceholderText="❌ Key incorrecta"
     end
 end)
 
--- Abrir panel
+-- Panel toggle
 mainBtn.MouseButton1Click:Connect(function()
     frame.Visible=not frame.Visible
 end)
