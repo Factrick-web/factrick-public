@@ -216,7 +216,7 @@ infoCornerFrame.CornerRadius = UDim.new(0,6)
 infoCornerFrame.Parent = infoFrame
 
 local infoText = Instance.new("TextLabel")
-infoText.Text = "🎮 Factrick Cheat\n👤 Creador: @castillo_Fx4\n⚡ Version: 1.0\n💡 Usa con cuidado\n\n📌 Creadores de contenido:\n@tradeos.brainrotslzv\n@subass2\n@brainrotscripts2"
+infoText.Text = "🎮 Factrick Cheat\n👤 Creador: @castillo_Fx4\n⚡ Version: 1.0\n💡 Usa con cuidado\n\n📌 Creadores de contenido:\n@tradeos.brainrotslzv\n@subass2\n"
 infoText.Size = UDim2.new(1,-10,1,-10)
 infoText.Position = UDim2.new(0,5,0,5)
 infoText.BackgroundTransparency = 1
@@ -310,22 +310,66 @@ end)
 local function createFloatButton()
     if floatGuiBtn then return end
     floatGuiBtn = Instance.new("TextButton")
-    floatGuiBtn.Size = UDim2.new(0,80,0,30)
-    floatGuiBtn.Position = UDim2.new(0.5,-40,0.5,-15)
+    floatGuiBtn.Size = UDim2.new(0,90,0,35)
+    floatGuiBtn.Position = UDim2.new(0.5,-45,0.5,-18)
     floatGuiBtn.Text = "Float OFF"
-    floatGuiBtn.BackgroundColor3 = Color3.fromRGB(70,130,180)
     floatGuiBtn.TextColor3 = Color3.fromRGB(255,255,255)
     floatGuiBtn.Font = Enum.Font.GothamBold
     floatGuiBtn.TextSize = 14
     floatGuiBtn.Parent = gui
     floatGuiBtn.Active = true
     floatGuiBtn.Draggable = true
+    floatGuiBtn.BackgroundTransparency = 0
+
+    -- Bordes redondeados
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,12)
+    corner.Parent = floatGuiBtn
+
+    -- Sombra
+    local shadow = Instance.new("ImageLabel")
+    shadow.AnchorPoint = Vector2.new(0.5,0.5)
+    shadow.Position = UDim2.new(0.5,0,0.5,4)
+    shadow.Size = UDim2.new(1,12,1,12)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://5028857084"
+    shadow.ImageColor3 = Color3.fromRGB(0,0,0)
+    shadow.ImageTransparency = 0.5
+    shadow.Parent = floatGuiBtn
+
+    -- Gradiente de color
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(70,130,180)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(138,43,226))
+    }
+    gradient.Rotation = 45
+    gradient.Parent = floatGuiBtn
+
+    -- Animación RGB dinámica
+    task.spawn(function()
+        while floatGuiBtn and floatGuiBtn.Parent do
+            gradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromHSV(tick()%5/5,1,1)),
+                ColorSequenceKeypoint.new(1, Color3.fromHSV((tick()%5/5)+0.2,1,1))
+            }
+            task.wait(0.1)
+        end
+    end)
 
     local toggled = false
     floatGuiBtn.MouseButton1Click:Connect(function()
         toggled = not toggled
         floatEnabled = toggled
         floatGuiBtn.Text = toggled and "Float ON" or "Float OFF"
+    end)
+
+    -- Hover efecto
+    floatGuiBtn.MouseEnter:Connect(function()
+        floatGuiBtn.TextSize = 16
+    end)
+    floatGuiBtn.MouseLeave:Connect(function()
+        floatGuiBtn.TextSize = 14
     end)
 end
 
@@ -470,7 +514,7 @@ createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
         if timeBaseData.renderConn and timeBaseData.renderConn.Connected then
             timeBaseData.renderConn:Disconnect()
         end
-        -- desconectar child events
+        -- desconectar child eventos
         if timeBaseData.connAdded and timeBaseData.connAdded.Connected then
             timeBaseData.connAdded:Disconnect()
         end
@@ -650,3 +694,4 @@ end)
 mainBtn.MouseButton1Click:Connect(function()
     frame.Visible=not frame.Visible
 end)
+
