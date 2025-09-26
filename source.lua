@@ -1,4 +1,3 @@
-
 -- Servicios
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -763,6 +762,223 @@ createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
         end
     end)
 end)
+
+-- ============================
+-- ESP BREINROT (Jugadores + Bosses con distancia)
+-- ============================
+do
+    local breinrotEnabled = false
+    local bossesTracked = {}
+    local bossesConnAdded = nil
+    local bossesConnRemoving = nil
+    local playersLoopRunning = false
+
+    local TARGET_BOSSES = {
+        "Graipuss Medussi",
+        "La Vacca Saturno Sarturnita",
+        "Los Tralaleritos",
+        "Sammyni Spyderini",
+        "Garama and Madundung",
+        "La Grande Combinasion",
+        "Las Sis",
+        "Chimpanzini Spiderini",
+        "Nuclearo Dinossauro",
+        "La Extinct Grande",
+        "Chicleteira Bicicleteira",
+        "Dragon Cannelloni",
+        "Los Combinasionas",
+        "Los Hotspotsitos",
+        "Spaghetti Tualetti",
+        "La Supreme Combinasion",
+        "Strawberry Elephant",
+        "Ketupat Kepat",
+        "Los Noo My Hotspotsitos",
+    }
+
+    local BOSS_COLORS = {
+        ["Graipuss Medussi"] = Color3.fromRGB(255,80,80),
+        ["Nuclearo Dinossauro"] = Color3.fromRGB(0,255,0),
+        ["Dragon Cannelloni"] = Color3.fromRGB(255,60,60),
+        ["Strawberry Elephant"] = Color3.fromRGB(255,80,180),
+    }
+
+    local function normalizeName(s)
+        return (tostring(s):gsub("^%s*(.-)%s*$","%1")):lower()
+    end
+    local normalizedBosses = {}
+    for _,b in ipairs(TARGET_BOSSES) do
+        normalizedBosses[normalizeName(b)] = b
+    end
+
+    local function cleanupBossESP(model)
+        local data = bossesTracked[model]
+        if data then
+            -- disconnect heartbeat conn if present
+            if data.conn and data.conn.Connected then
+                pcall(function() data.conn:Disconnect() end)
+            end
+            if data.highlight and data.highlight.Parent then
+                pcall(function() data.highlight:Destroy() end)
+            end
+            if data.billboard and data.billboard.Parent then
+                pcall(function() data.billboard:Destroy() end)
+            end
+            bossesTracked[model] = nil
+        end
+    end
+
+    local function attachBossESP(model)
+        if not breinrotEnabled or bossesTracked[model] then return end
+        local bossName = normalizedBosses[normalizeName(model.Name)]
+        if not bossName then return end
+
+        local adornee = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+        if not adornee then
+            for _,d in ipairs(model:GetDescendants()) do
+                if d:IsA("BasePart") then adornee = d break end
+            end
+        end
+        if not adornee then return end
+
+        local color = BOSS_COLORS[bossName] or Color3.fromRGB(255,255,255)
+
+        local hl = Instance.new("Highlight")
+        hl.Name = "BREINROT_Highlight"
+        hl.Adornee = model
+        hl.FillTransparency = 0.6
+        hl.OutlineColor = color
+        hl.Parent = model
+
+        local bb = Instance.new("BillboardGui")
+        bb.Name = "BREINROT_Billboard"
+        bb.Size = UDim2.new(0,200,0,50)
+        bb.Adornee = adornee
+        bb.AlwaysOnTop = true
+        bb.StudsOffset = Vector3.new(0,4,0)
+        bb.Parent = model
+
+        local txt = Instance.new("TextLabel")
+        txt.Size = UDim2.new(1,0,1,0)
+        txt.BackgroundTransparency = 1
+        txt.Font = Enum.Font.GothamBold
+        txt.Text = "👹 "..bossName
+        txt.TextColor3 = color
+        txt.TextScaled = true
+        txt.Parent = bb
+
+        local conn
+        conn = RunService.Heartbeat:Connect(function()
+            if not breinrotEnabled or not model.Parent or not adornee.Parent then
+                if conn and conn.Connected then pcall(function() conn:Disconnect() end) end
+                cleanupBossESP(model)
+                return
+            end
+            if player.Character and player.Character.PrimaryPart then
+                local dist = (player.Character.PrimaryPart.Position - adornee.Position).Magnitude
+                txt.Text = string.format("👹 %s (%.0fm)", bossName, dist)
+            end
+        end)
+
+        bossesTracked[model] = { highlight = hl, billboard = bb, text = txt, conn = conn }
+    end
+
+    createButton("ESP BREINROT", Color3.fromRGB(255,20,147), function(state)
+        breinrotEnabled = state
+
+        if not state then
+            -- desconectar listeners de spawn/removed
+            if bossesConnAdded and bossesConnAdded.Connected then
+                pcall(function() bossesConnAdded:Disconnect() end)
+                bossesConnAdded = nil
+            end
+            if bossesConnRemoving and bossesConnRemoving.Connected then
+                pcall(function() bossesConnRemoving:Disconnect() end)
+                bossesConnRemoving = nil
+            end
+
+            -- limpiar bosses
+            for model,_ in pairs(bossesTracked) do
+                cleanupBossESP(model)
+            end
+            bossesTracked = {}
+
+            -- limpiar jugadores
+            for _,plr in pairs(Players:GetPlayers()) do
+                if plr.Character and plr.Character:FindFirstChild("BREINROT_ESP") then
+                    pcall(function() plr.Character.BREINROT_ESP:Destroy() end)
+                end
+            end
+
+            -- stop players loop flag (loop checks breinrotEnabled)
+            playersLoopRunning = false
+
+            return
+        end
+
+        -- start players loop (one loop at a time)
+        if not playersLoopRunning then
+            playersLoopRunning = true
+            task.spawn(function()
+                while breinrotEnabled do
+                    for _,plr in pairs(Players:GetPlayers()) do
+                        if plr~=player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                            if not plr.Character:FindFirstChild("BREINROT_ESP") then
+                                local bb = Instance.new("BillboardGui")
+                                bb.Name="BREINROT_ESP"
+                                bb.Size=UDim2.new(0,140,0,40)
+                                bb.Adornee=plr.Character.HumanoidRootPart
+                                bb.AlwaysOnTop=true
+                                bb.StudsOffset=Vector3.new(0,4,0)
+                                bb.Parent=plr.Character
+
+                                local txt = Instance.new("TextLabel")
+                                txt.Size=UDim2.new(1,0,1,0)
+                                txt.BackgroundTransparency=1
+                                txt.Text="🧠 "..plr.Name
+                                txt.Font=Enum.Font.GothamBold
+                                txt.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
+                                txt.TextScaled=true
+                                txt.Parent=bb
+                            else
+                                for _,desc in pairs(plr.Character.BREINROT_ESP:GetChildren()) do
+                                    if desc:IsA("TextLabel") then
+                                        desc.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.2)
+                end
+                playersLoopRunning = false
+            end)
+        end
+
+        -- ESP Bosses existentes
+        for _,desc in ipairs(workspace:GetDescendants()) do
+            if desc:IsA("Model") and normalizedBosses[normalizeName(desc.Name)] then
+                pcall(function() attachBossESP(desc) end)
+            end
+        end
+
+        -- conectar a nuevos bosses y removals (guardar conexiones para desconectar al apagar)
+        if not bossesConnAdded then
+            bossesConnAdded = workspace.DescendantAdded:Connect(function(obj)
+                if breinrotEnabled and obj:IsA("Model") and normalizedBosses[normalizeName(obj.Name)] then
+                    task.wait(0.1)
+                    pcall(function() attachBossESP(obj) end)
+                end
+            end)
+        end
+        if not bossesConnRemoving then
+            bossesConnRemoving = workspace.DescendantRemoving:Connect(function(obj)
+                if bossesTracked[obj] then
+                    pcall(function() cleanupBossESP(obj) end)
+                end
+            end)
+        end
+    end)
+end
 
 -- ✅ Serverhop directo
 createButton("Serverhop", Color3.fromRGB(0,191,255), function()
