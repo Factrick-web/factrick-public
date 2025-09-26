@@ -1,3 +1,4 @@
+
 -- Servicios
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -5,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
-local humanoid = player.Character:WaitForChild("Humanoid")
+local humanoid = player.Character and player.Character:WaitForChild("Humanoid")
 
 -- Estados
 local speedEnabled = false
@@ -37,7 +38,79 @@ local gui = Instance.new("ScreenGui")
 gui.Parent = game.CoreGui
 gui.ResetOnSpawn = false
 
--- Pantalla Key
+-- -----------------------
+-- 📢 Comunicado inicial
+-- -----------------------
+local comunicadoFrame = Instance.new("Frame")
+comunicadoFrame.Size = UDim2.new(0,320,0,180)
+comunicadoFrame.Position = UDim2.new(0.5,-160,0.5,-90)
+comunicadoFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+comunicadoFrame.Active = true
+comunicadoFrame.Draggable = true
+comunicadoFrame.Parent = gui
+local comunicadoCorner = Instance.new("UICorner")
+comunicadoCorner.CornerRadius = UDim.new(0,12)
+comunicadoCorner.Parent = comunicadoFrame
+
+local comunicadoTitulo = Instance.new("TextLabel")
+comunicadoTitulo.Text = "👋 Hola, ¿cómo estás?"
+comunicadoTitulo.Size = UDim2.new(1,0,0,35)
+comunicadoTitulo.BackgroundTransparency = 1
+comunicadoTitulo.Font = Enum.Font.GothamBold
+comunicadoTitulo.TextColor3 = Color3.fromRGB(255,255,255)
+comunicadoTitulo.TextSize = 18
+comunicadoTitulo.Parent = comunicadoFrame
+
+local comunicadoTexto = Instance.new("TextLabel")
+comunicadoTexto.Text = "Te invito a mi comunidad de Discord,\nallí pasamos todo actualizado.\n\n📌 ¿Qué esperas para entrar?"
+comunicadoTexto.Size = UDim2.new(1,-20,0,80)
+comunicadoTexto.Position = UDim2.new(0,10,0,45)
+comunicadoTexto.BackgroundTransparency = 1
+comunicadoTexto.Font = Enum.Font.Gotham
+comunicadoTexto.TextWrapped = true
+comunicadoTexto.TextYAlignment = Enum.TextYAlignment.Top
+comunicadoTexto.TextColor3 = Color3.fromRGB(200,200,200)
+comunicadoTexto.TextSize = 14
+comunicadoTexto.Parent = comunicadoFrame
+
+local discordBtn = Instance.new("TextButton")
+discordBtn.Text = "Unirme al Discord"
+discordBtn.Size = UDim2.new(0.7,0,0,35)
+discordBtn.Position = UDim2.new(0.15,0,0,135)
+discordBtn.BackgroundColor3 = Color3.fromRGB(70,130,180)
+discordBtn.TextColor3 = Color3.fromRGB(255,255,255)
+discordBtn.Font = Enum.Font.GothamBold
+discordBtn.TextSize = 14
+discordBtn.Parent = comunicadoFrame
+local discordCorner = Instance.new("UICorner")
+discordCorner.CornerRadius = UDim.new(0,8)
+discordCorner.Parent = discordBtn
+
+discordBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        setclipboard("https://discord.gg/vaaPztfw")
+    end)
+    discordBtn.Text = "✅ Copiado!"
+    task.wait(2)
+    discordBtn.Text = "Unirme al Discord"
+end)
+
+local cerrarBtn = Instance.new("TextButton")
+cerrarBtn.Text = "Cerrar"
+cerrarBtn.Size = UDim2.new(0.25,0,0,25)
+cerrarBtn.Position = UDim2.new(0.72,0,0,5)
+cerrarBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
+cerrarBtn.TextColor3 = Color3.fromRGB(255,255,255)
+cerrarBtn.Font = Enum.Font.GothamBold
+cerrarBtn.TextSize = 12
+cerrarBtn.Parent = comunicadoFrame
+local cerrarCorner = Instance.new("UICorner")
+cerrarCorner.CornerRadius = UDim.new(0,6)
+cerrarCorner.Parent = cerrarBtn
+
+-- -----------------------
+-- 🔑 Pantalla Key (se oculta hasta que pase el comunicado)
+-- -----------------------
 local keyFrame = Instance.new("Frame")
 keyFrame.Size = UDim2.new(0,280,0,140)
 keyFrame.Position = UDim2.new(0.5,-140,0.5,-70)
@@ -48,6 +121,7 @@ keyFrame.Parent = gui
 local keyCorner = Instance.new("UICorner")
 keyCorner.CornerRadius = UDim.new(0,12)
 keyCorner.Parent = keyFrame
+keyFrame.Visible = false -- hide until comunicado closes
 
 local keyTitle = Instance.new("TextLabel")
 keyTitle.Text = "🔑 Ingresa tu Key"
@@ -81,7 +155,29 @@ local keyCornerBtn = Instance.new("UICorner")
 keyCornerBtn.CornerRadius = UDim.new(0,8)
 keyCornerBtn.Parent = keyBtn
 
+-- -----------------------
+-- ⏳ Auto cerrar comunicado y mostrar key (5 seconds)
+-- -----------------------
+task.delay(5, function()
+    if comunicadoFrame and comunicadoFrame.Parent then
+        pcall(function() comunicadoFrame:Destroy() end)
+    end
+    if keyFrame then
+        keyFrame.Visible = true
+    end
+end)
+
+-- Also allow manual close
+cerrarBtn.MouseButton1Click:Connect(function()
+    if comunicadoFrame and comunicadoFrame.Parent then
+        comunicadoFrame:Destroy()
+    end
+    keyFrame.Visible = true
+end)
+
+-- -----------------------
 -- Pantalla de carga
+-- -----------------------
 local loadingFrame = Instance.new("Frame")
 loadingFrame.Size = UDim2.new(0,300,0,150)
 loadingFrame.Position = UDim2.new(0.5,-150,0.5,-75)
@@ -119,7 +215,9 @@ local barFillCorner = Instance.new("UICorner")
 barFillCorner.CornerRadius = UDim.new(0,8)
 barFillCorner.Parent = barFill
 
--- Panel flotante
+-- -----------------------
+-- Panel flotante y menu
+-- -----------------------
 local mainBtn = Instance.new("TextButton")
 mainBtn.Size = UDim2.new(0,140,0,35)
 mainBtn.Position = UDim2.new(0.05,0,0.2,0)
@@ -279,12 +377,12 @@ createButton("Speed", Color3.fromRGB(70,130,180), function(state)
     if state then
         task.spawn(function()
             while speedEnabled do
-                humanoid.WalkSpeed = 50
+                if humanoid then humanoid.WalkSpeed = 50 end
                 task.wait(0.1)
             end
         end)
     else
-        humanoid.WalkSpeed = 16
+        if humanoid then humanoid.WalkSpeed = 16 end
     end
 end)
 
@@ -297,10 +395,10 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if jumpEnabled then
         if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then
-            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
             if root then root.Velocity = Vector3.new(root.Velocity.X,100,root.Velocity.Z) end
         elseif input.UserInputType == Enum.UserInputType.Touch then
-            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
             if root then root.Velocity = Vector3.new(root.Velocity.X,100,root.Velocity.Z) end
         end
     end
@@ -694,4 +792,3 @@ end)
 mainBtn.MouseButton1Click:Connect(function()
     frame.Visible=not frame.Visible
 end)
-
