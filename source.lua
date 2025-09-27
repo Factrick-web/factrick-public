@@ -764,7 +764,7 @@ createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
 end)
 
 -- ============================
--- ESP BREINROT (Jugadores + Bosses con distancia)
+-- ESP BREINROT (Jugadores + Bosses con distancia) --> MODIFICADO: SOLO BOSSES (RGB + Distancia)
 -- ============================
 do
     local breinrotEnabled = false
@@ -866,6 +866,7 @@ do
         txt.TextScaled = true
         txt.Parent = bb
 
+        local hueOffset = math.random()
         local conn
         conn = RunService.Heartbeat:Connect(function()
             if not breinrotEnabled or not model.Parent or not adornee.Parent then
@@ -876,10 +877,16 @@ do
             if player.Character and player.Character.PrimaryPart then
                 local dist = (player.Character.PrimaryPart.Position - adornee.Position).Magnitude
                 txt.Text = string.format("👹 %s (%.0fm)", bossName, dist)
+            else
+                txt.Text = "👹 "..bossName
             end
+            -- color RGB dinámico con offset por boss
+            local hueSpeed = 0.15
+            local hue = (tick() * hueSpeed + hueOffset) % 1
+            txt.TextColor3 = Color3.fromHSV(hue, 1, 1)
         end)
 
-        bossesTracked[model] = { highlight = hl, billboard = bb, text = txt, conn = conn }
+        bossesTracked[model] = { highlight = hl, billboard = bb, text = txt, conn = conn, hueOffset = hueOffset }
     end
 
     createButton("ESP BREINROT", Color3.fromRGB(255,20,147), function(state)
@@ -902,56 +909,10 @@ do
             end
             bossesTracked = {}
 
-            -- limpiar jugadores
-            for _,plr in pairs(Players:GetPlayers()) do
-                if plr.Character and plr.Character:FindFirstChild("BREINROT_ESP") then
-                    pcall(function() plr.Character.BREINROT_ESP:Destroy() end)
-                end
-            end
-
-            -- stop players loop flag (loop checks breinrotEnabled)
+            -- stop players loop flag (no usamos loop de players aquí)
             playersLoopRunning = false
 
             return
-        end
-
-        -- start players loop (one loop at a time)
-        if not playersLoopRunning then
-            playersLoopRunning = true
-            task.spawn(function()
-                while breinrotEnabled do
-                    for _,plr in pairs(Players:GetPlayers()) do
-                        if plr~=player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                            if not plr.Character:FindFirstChild("BREINROT_ESP") then
-                                local bb = Instance.new("BillboardGui")
-                                bb.Name="BREINROT_ESP"
-                                bb.Size=UDim2.new(0,140,0,40)
-                                bb.Adornee=plr.Character.HumanoidRootPart
-                                bb.AlwaysOnTop=true
-                                bb.StudsOffset=Vector3.new(0,4,0)
-                                bb.Parent=plr.Character
-
-                                local txt = Instance.new("TextLabel")
-                                txt.Size=UDim2.new(1,0,1,0)
-                                txt.BackgroundTransparency=1
-                                txt.Text="🧠 "..plr.Name
-                                txt.Font=Enum.Font.GothamBold
-                                txt.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
-                                txt.TextScaled=true
-                                txt.Parent=bb
-                            else
-                                for _,desc in pairs(plr.Character.BREINROT_ESP:GetChildren()) do
-                                    if desc:IsA("TextLabel") then
-                                        desc.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    task.wait(0.2)
-                end
-                playersLoopRunning = false
-            end)
         end
 
         -- ESP Bosses existentes
