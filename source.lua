@@ -1,3 +1,4 @@
+-- Factrick Cheat con UI estilo Inscript (Switches modernos)
 -- Servicios
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -5,9 +6,13 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
-local humanoid = player.Character and player.Character:WaitForChild("Humanoid")
 
--- Estados
+-- Estado y datos globales
+local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+player.CharacterAdded:Connect(function(char)
+    humanoid = char:WaitForChild("Humanoid")
+end)
+
 local speedEnabled = false
 local jumpEnabled = false
 local floatEnabled = false
@@ -17,7 +22,6 @@ local floatPart = nil
 local floatGuiBtn = nil
 local timeBaseEnabled = false
 
--- Datos para Time Base (para mantener conexiones/estado entre ON/OFF)
 local timeBaseData = {
     espMap = {},
     connAdded = nil,
@@ -32,10 +36,13 @@ local floatFixedColor = Color3.fromRGB(70,130,180)
 local floatGradientColor1 = Color3.fromRGB(70,130,180)
 local floatGradientColor2 = Color3.fromRGB(138,43,226)
 
--- GUI principal
+-- GUI principal (usar PlayerGui para mayor compatibilidad)
+local playerGui = player:WaitForChild("PlayerGui")
 local gui = Instance.new("ScreenGui")
-gui.Parent = game.CoreGui
+gui.Name = "FactrickHubUI"
 gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = playerGui
 
 -- -----------------------
 -- 📢 Comunicado inicial
@@ -86,12 +93,9 @@ discordCorner.CornerRadius = UDim.new(0,8)
 discordCorner.Parent = discordBtn
 
 discordBtn.MouseButton1Click:Connect(function()
-    pcall(function()
-        setclipboard("https://discord.gg/vaaPztfw")
-    end)
+    pcall(function() setclipboard("https://discord.gg/vaaPztfw") end)
     discordBtn.Text = "✅ Copiado!"
-    task.wait(2)
-    discordBtn.Text = "Unirme al Discord"
+    task.delay(2, function() if discordBtn and discordBtn.Parent then discordBtn.Text = "Unirme al Discord" end end)
 end)
 
 local cerrarBtn = Instance.new("TextButton")
@@ -215,7 +219,7 @@ barFillCorner.CornerRadius = UDim.new(0,8)
 barFillCorner.Parent = barFill
 
 -- -----------------------
--- Panel flotante y menu
+-- Panel flotante y menu (botón y panel principal)
 -- -----------------------
 local mainBtn = Instance.new("TextButton")
 mainBtn.Size = UDim2.new(0,140,0,35)
@@ -257,7 +261,11 @@ title.Font = Enum.Font.GothamBold
 title.Parent = frame
 task.spawn(function()
     while task.wait(0.2) do
-        title.TextColor3 = Color3.fromHSV(tick()%5/5,1,1)
+        if title and title.Parent then
+            title.TextColor3 = Color3.fromHSV(tick()%5/5,1,1)
+        else
+            break
+        end
     end
 end)
 
@@ -324,36 +332,6 @@ infoText.TextWrapped = true
 infoText.TextYAlignment = Enum.TextYAlignment.Top
 infoText.Parent = infoFrame
 
--- Función para crear botones de hacks
-local function createButton(name,color,callback)
-    local btn = Instance.new("TextButton")
-    btn.Text = name.." (OFF)"
-    btn.Size = UDim2.new(1,0,0,30)
-    btn.BackgroundColor3 = color
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 14
-    btn.Parent = generalFrame
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,6)
-    corner.Parent = btn
-    local toggled = false
-    btn.MouseButton1Click:Connect(function()
-        toggled = not toggled
-        if toggled then
-            btn.Text = name.." (ON)"
-            btn.BackgroundColor3 = Color3.fromRGB(255,255,255)
-            btn.TextColor3 = Color3.fromRGB(0,0,0)
-            callback(true)
-        else
-            btn.Text = name.." (OFF)"
-            btn.BackgroundColor3 = color
-            btn.TextColor3 = Color3.fromRGB(255,255,255)
-            callback(false)
-        end
-    end)
-end
-
 -- Conexión pestañas
 generalBtn.MouseButton1Click:Connect(function()
     generalFrame.Visible = true
@@ -368,42 +346,63 @@ infoBtn.MouseButton1Click:Connect(function()
     generalBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
 end)
 
--- Hacks
+-- Función para crear switch (estilo Inscript moderno)
+local function createSwitch(name, parent, callback)
+    local option = Instance.new("Frame")
+    option.Size = UDim2.new(1, 0, 0, 40)
+    option.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    option.BorderSizePixel = 0
+    option.Parent = parent
+    Instance.new("UICorner", option).CornerRadius = UDim.new(0, 8)
 
--- Speed
-createButton("Speed", Color3.fromRGB(70,130,180), function(state)
-    speedEnabled = state
-    if state then
-        task.spawn(function()
-            while speedEnabled do
-                if humanoid then humanoid.WalkSpeed = 50 end
-                task.wait(0.1)
-            end
-        end)
-    else
-        if humanoid then humanoid.WalkSpeed = 16 end
-    end
-end)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Text = name
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 18
+    label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = option
 
--- High Jump
-createButton("High Jump", Color3.fromRGB(138,43,226), function(state)
-    jumpEnabled = state
-end)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 50, 0, 24)
+    button.Position = UDim2.new(1, -60, 0.5, -12)
+    button.BackgroundColor3 = Color3.fromRGB(90, 90, 95)
+    button.Text = ""
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Parent = option
+    Instance.new("UICorner", button).CornerRadius = UDim.new(1, 0)
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if jumpEnabled then
-        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then
-            local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if root then root.Velocity = Vector3.new(root.Velocity.X,100,root.Velocity.Z) end
-        elseif input.UserInputType == Enum.UserInputType.Touch then
-            local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if root then root.Velocity = Vector3.new(root.Velocity.X,100,root.Velocity.Z) end
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(0, 20, 0, 20)
+    circle.Position = UDim2.new(0, 2, 0.5, -10)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    circle.BorderSizePixel = 0
+    circle.Parent = button
+    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+    local state = false
+    button.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            button.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+            circle:TweenPosition(UDim2.new(1, -22, 0.5, -10), "Out", "Quad", 0.2, true)
+        else
+            button.BackgroundColor3 = Color3.fromRGB(90, 90, 95)
+            circle:TweenPosition(UDim2.new(0, 2, 0.5, -10), "Out", "Quad", 0.2, true)
         end
-    end
-end)
+        if callback then
+            pcall(function() callback(state) end)
+        end
+    end)
+end
 
--- Float con botón flotante y colores
+-- -----------------------
+-- Funciones auxiliares (Float button, etc)
+-- -----------------------
 local function createFloatButton()
     if floatGuiBtn then return end
     floatGuiBtn = Instance.new("TextButton")
@@ -418,12 +417,10 @@ local function createFloatButton()
     floatGuiBtn.Draggable = true
     floatGuiBtn.BackgroundTransparency = 0
 
-    -- Bordes redondeados
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0,12)
     corner.Parent = floatGuiBtn
 
-    -- Sombra
     local shadow = Instance.new("ImageLabel")
     shadow.AnchorPoint = Vector2.new(0.5,0.5)
     shadow.Position = UDim2.new(0.5,0,0.5,4)
@@ -434,7 +431,6 @@ local function createFloatButton()
     shadow.ImageTransparency = 0.5
     shadow.Parent = floatGuiBtn
 
-    -- Gradiente de color
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(70,130,180)),
@@ -443,7 +439,6 @@ local function createFloatButton()
     gradient.Rotation = 45
     gradient.Parent = floatGuiBtn
 
-    -- Animación RGB dinámica
     task.spawn(function()
         while floatGuiBtn and floatGuiBtn.Parent do
             gradient.Color = ColorSequence.new{
@@ -461,7 +456,6 @@ local function createFloatButton()
         floatGuiBtn.Text = toggled and "Float ON" or "Float OFF"
     end)
 
-    -- Hover efecto
     floatGuiBtn.MouseEnter:Connect(function()
         floatGuiBtn.TextSize = 16
     end)
@@ -470,16 +464,7 @@ local function createFloatButton()
     end)
 end
 
-createButton("Float", Color3.fromRGB(60,179,113), function(state)
-    if state then
-        createFloatButton()
-    else
-        floatEnabled = false
-        if floatGuiBtn then floatGuiBtn:Destroy() floatGuiBtn=nil end
-        if floatPart then floatPart:Destroy() floatPart=nil end
-    end
-end)
-
+-- Loop de float que mantiene la plataforma debajo del jugador y aplica color dinámico
 task.spawn(function()
     while task.wait(0.05) do
         if floatEnabled then
@@ -496,7 +481,6 @@ task.spawn(function()
                 end
                 floatPart.CFrame = CFrame.new(root.Position.X, root.Position.Y-3, root.Position.Z)
 
-                -- Color dinámico
                 if floatColorMode == "RGB" then
                     floatPart.Color = Color3.fromHSV(tick()%5/5,1,1)
                 elseif floatColorMode == "Fijo" then
@@ -507,36 +491,87 @@ task.spawn(function()
                 end
             end
         else
-            if floatPart then 
-                floatPart:Destroy() 
-                floatPart=nil 
+            if floatPart then
+                pcall(function() floatPart:Destroy() end)
+                floatPart=nil
             end
         end
     end
 end)
 
--- FPS Booting con AntiLag
-createButton("FPS Booting", Color3.fromRGB(255,165,0), function(state)
+-- -----------------------
+-- Hacks (ahora con switches)
+-- -----------------------
+
+-- Speed
+createSwitch("Speed", generalFrame, function(state)
+    speedEnabled = state
     if state then
-        if setfpscap then setfpscap(360) end
+        task.spawn(function()
+            while speedEnabled do
+                if humanoid then pcall(function() humanoid.WalkSpeed = 50 end) end
+                task.wait(0.1)
+            end
+        end)
+    else
+        if humanoid then pcall(function() humanoid.WalkSpeed = 16 end) end
+    end
+end)
+
+-- High Jump
+local function highJumpInput(input, gameProcessed)
+    if gameProcessed then return end
+    if not jumpEnabled then return end
+    if (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space) or (input.UserInputType == Enum.UserInputType.Touch) then
+        local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            root.Velocity = Vector3.new(root.Velocity.X,100,root.Velocity.Z)
+        end
+    end
+end
+UserInputService.InputBegan:Connect(highJumpInput)
+createSwitch("High Jump", generalFrame, function(state)
+    jumpEnabled = state
+end)
+
+-- Float (con botón flotante)
+createSwitch("Float", generalFrame, function(state)
+    if state then
+        createFloatButton()
+        floatEnabled = false -- el Usuario debe activar con el floatGuiBtn
+    else
+        floatEnabled = false
+        if floatGuiBtn then pcall(function() floatGuiBtn:Destroy() end) floatGuiBtn = nil end
+        if floatPart then pcall(function() floatPart:Destroy() end) floatPart = nil end
+    end
+end)
+
+-- FPS Booting con AntiLag
+createSwitch("FPS Booting", generalFrame, function(state)
+    if state then
+        if setfpscap then pcall(function() setfpscap(360) end) end
         for _,plr in pairs(Players:GetPlayers()) do
             if plr.Character then
                 for _,part in pairs(plr.Character:GetChildren()) do
                     if part:IsA("BasePart") then
-                        part.Material = Enum.Material.SmoothPlastic
-                        part.Reflectance = 0
+                        pcall(function()
+                            part.Material = Enum.Material.SmoothPlastic
+                            part.Reflectance = 0
+                        end)
                     end
                 end
             end
         end
     else
-        if setfpscap then setfpscap(60) end
+        if setfpscap then pcall(function() setfpscap(60) end) end
         for _,plr in pairs(Players:GetPlayers()) do
             if plr.Character then
                 for _,part in pairs(plr.Character:GetChildren()) do
                     if part:IsA("BasePart") then
-                        part.Material = Enum.Material.Plastic
-                        part.Reflectance = 0
+                        pcall(function()
+                            part.Material = Enum.Material.Plastic
+                            part.Reflectance = 0
+                        end)
                     end
                 end
             end
@@ -544,98 +579,108 @@ createButton("FPS Booting", Color3.fromRGB(255,165,0), function(state)
     end
 end)
 
--- ESP Players
-createButton("ESP Players", Color3.fromRGB(220,20,60), function(state)
+-- ESP Players (RGB)
+createSwitch("ESP Players", generalFrame, function(state)
     espEnabled = state
-    task.spawn(function()
-        while espEnabled do
-            for _,plr in pairs(Players:GetPlayers()) do
-                if plr~=player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                    if not plr.Character:FindFirstChild("ESP") then
-                        local bb = Instance.new("BillboardGui")
-                        bb.Name="ESP"
-                        bb.Size=UDim2.new(0,100,0,50)
-                        bb.Adornee=plr.Character.HumanoidRootPart
-                        bb.AlwaysOnTop=true
-                        bb.StudsOffset=Vector3.new(0,3,0)
-                        bb.Parent=plr.Character
+    if state then
+        task.spawn(function()
+            while espEnabled do
+                for _,plr in pairs(Players:GetPlayers()) do
+                    if plr~=player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                        if not plr.Character:FindFirstChild("ESP") then
+                            local success,err = pcall(function()
+                                local bb = Instance.new("BillboardGui")
+                                bb.Name="ESP"
+                                bb.Size=UDim2.new(0,100,0,50)
+                                bb.Adornee=plr.Character.HumanoidRootPart
+                                bb.AlwaysOnTop=true
+                                bb.StudsOffset=Vector3.new(0,3,0)
+                                bb.Parent=plr.Character
 
-                        local txt = Instance.new("TextLabel")
-                        txt.Size=UDim2.new(1,0,0.3,0)
-                        txt.Position=UDim2.new(0,0,0,0)
-                        txt.BackgroundTransparency=1
-                        txt.Text=plr.Name
-                        txt.Font=Enum.Font.GothamBold
-                        txt.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
-                        txt.TextScaled=true
-                        txt.Parent=bb
+                                local txt = Instance.new("TextLabel")
+                                txt.Size=UDim2.new(1,0,0.3,0)
+                                txt.Position=UDim2.new(0,0,0,0)
+                                txt.BackgroundTransparency=1
+                                txt.Text=plr.Name
+                                txt.Font=Enum.Font.GothamBold
+                                txt.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
+                                txt.TextScaled=true
+                                txt.Parent=bb
 
-                        for _,p in pairs(plr.Character:GetDescendants()) do
-                            if p:IsA("BasePart") then
-                                local box = Instance.new("BoxHandleAdornment")
-                                box.Adornee=p
-                                box.AlwaysOnTop=true
-                                box.ZIndex=0
-                                box.Size=p.Size
-                                box.Transparency=0.5
-                                box.Color3=Color3.fromHSV(tick()%5/5,1,1)
-                                box.Parent=p
+                                for _,p in pairs(plr.Character:GetDescendants()) do
+                                    if p:IsA("BasePart") then
+                                        local box = Instance.new("BoxHandleAdornment")
+                                        box.Adornee=p
+                                        box.AlwaysOnTop=true
+                                        box.ZIndex=0
+                                        box.Size=p.Size
+                                        box.Transparency=0.5
+                                        box.Color3=Color3.fromHSV(tick()%5/5,1,1)
+                                        box.Parent=p
+                                    end
+                                end
+                            end)
+                            if not success then
+                                -- ignore errors
                             end
-                        end
-                    else
-                        for _,desc in pairs(plr.Character.ESP:GetChildren()) do
-                            if desc:IsA("TextLabel") then
-                                desc.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
+                        else
+                            -- update color
+                            for _,desc in pairs(plr.Character.ESP:GetChildren()) do
+                                if desc:IsA("TextLabel") then
+                                    desc.TextColor3=Color3.fromHSV(tick()%5/5,1,1)
+                                end
                             end
                         end
                     end
                 end
+                task.wait(0.2)
             end
-            task.wait(0.2)
-        end
-        for _,plr in pairs(Players:GetPlayers()) do
-            if plr.Character and plr.Character:FindFirstChild("ESP") then
-                plr.Character.ESP:Destroy()
+            -- cleanup on disable
+            for _,plr in pairs(Players:GetPlayers()) do
+                if plr.Character and plr.Character:FindFirstChild("ESP") then
+                    pcall(function() plr.Character.ESP:Destroy() end)
+                end
+                -- also remove BoxHandleAdornment if present
+                if plr.Character then
+                    for _,d in pairs(plr.Character:GetDescendants()) do
+                        if d:IsA("BoxHandleAdornment") then
+                            pcall(function() d:Destroy() end)
+                        end
+                    end
+                end
             end
-        end
-    end)
+        end)
+    end
 end)
 
--- ✅ NUEVO BOTÓN TIME BASE (ahora usa la lógica completa del ESP RGB que mandaste, sin UI extra)
-createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
+-- ✅ Time Base (plots) - toma la lógica completa del script Time Base
+createSwitch("Time Base", generalFrame, function(state)
     timeBaseEnabled = state
 
-    -- Si se apaga: limpiar todo (con desconexión de eventos)
     if not state then
-        -- desconectar render
         if timeBaseData.renderConn and timeBaseData.renderConn.Connected then
-            timeBaseData.renderConn:Disconnect()
+            pcall(function() timeBaseData.renderConn:Disconnect() end)
         end
-        -- desconectar child eventos
         if timeBaseData.connAdded and timeBaseData.connAdded.Connected then
-            timeBaseData.connAdded:Disconnect()
+            pcall(function() timeBaseData.connAdded:Disconnect() end)
         end
         if timeBaseData.connRemoved and timeBaseData.connRemoved.Connected then
-            timeBaseData.connRemoved:Disconnect()
+            pcall(function() timeBaseData.connRemoved:Disconnect() end)
         end
-        -- destruir billboards creados
         for plot,info in pairs(timeBaseData.espMap) do
             if info and info.billboard and info.billboard.Parent then
                 pcall(function() info.billboard:Destroy() end)
             end
             timeBaseData.espMap[plot] = nil
         end
-        -- reset
         timeBaseData = { espMap = {}, connAdded = nil, connRemoved = nil, renderConn = nil, PLOTS_FOLDER = nil }
         return
     end
 
-    -- Si se enciende: inicializar
     timeBaseData.PLOTS_FOLDER = workspace:FindFirstChild("Plots")
     local PLOTS_FOLDER = timeBaseData.PLOTS_FOLDER
     local espMap = timeBaseData.espMap
 
-    -- Funciones (idénticas a las de tu script ESP independiente)
     local function findHitbox(plot)
         local candidate = plot:FindFirstChild("Hitbox", true)
         if candidate then return candidate end
@@ -662,9 +707,7 @@ createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
         local hitbox = findHitbox(plot)
         local sourceLabel = findRemainingLabel(plot)
 
-        if not hitbox then
-            return
-        end
+        if not hitbox then return end
 
         local bb = Instance.new("BillboardGui")
         bb.Name = "ESP_RemainingTime"
@@ -721,10 +764,8 @@ createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
         end
     end
 
-    -- iniciar colección
     collectAll()
 
-    -- conectar observadores
     if PLOTS_FOLDER then
         timeBaseData.connAdded = PLOTS_FOLDER.ChildAdded:Connect(function(child)
             task.wait(0.15)
@@ -735,7 +776,6 @@ createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
         end)
     end
 
-    -- RenderStepped: actualización de texto y color (RGB arcoíris)
     timeBaseData.renderConn = RunService.RenderStepped:Connect(function()
         local now = tick()
         for plot, info in pairs(espMap) do
@@ -747,10 +787,8 @@ createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
                         if s and #s > 0 then txt = s end
                     end)
                 end
-                -- asigna texto
                 pcall(function() info.timeLabel.Text = txt end)
 
-                -- color arcoíris
                 local hueSpeed = 0.15
                 local hue = (now * hueSpeed + (info.hueOffset or 0)) % 1
                 local color = Color3.fromHSV(hue, 1, 1)
@@ -764,14 +802,13 @@ createButton("Time Base", Color3.fromRGB(0,255,127), function(state)
 end)
 
 -- ============================
--- ESP BREINROT (Jugadores + Bosses con distancia) --> MODIFICADO: SOLO BOSSES (RGB + Distancia)
+-- ESP BREINROT (Jugadores + Bosses con distancia) --> SOLO BOSSES (RGB + Distancia)
 -- ============================
 do
     local breinrotEnabled = false
     local bossesTracked = {}
     local bossesConnAdded = nil
     local bossesConnRemoving = nil
-    local playersLoopRunning = false
 
     local TARGET_BOSSES = {
         "Graipuss Medussi",
@@ -813,7 +850,6 @@ do
     local function cleanupBossESP(model)
         local data = bossesTracked[model]
         if data then
-            -- disconnect heartbeat conn if present
             if data.conn and data.conn.Connected then
                 pcall(function() data.conn:Disconnect() end)
             end
@@ -880,7 +916,6 @@ do
             else
                 txt.Text = "👹 "..bossName
             end
-            -- color RGB dinámico con offset por boss
             local hueSpeed = 0.15
             local hue = (tick() * hueSpeed + hueOffset) % 1
             txt.TextColor3 = Color3.fromHSV(hue, 1, 1)
@@ -889,11 +924,10 @@ do
         bossesTracked[model] = { highlight = hl, billboard = bb, text = txt, conn = conn, hueOffset = hueOffset }
     end
 
-    createButton("ESP BREINROT", Color3.fromRGB(255,20,147), function(state)
+    createSwitch("ESP BREINROT", generalFrame, function(state)
         breinrotEnabled = state
 
         if not state then
-            -- desconectar listeners de spawn/removed
             if bossesConnAdded and bossesConnAdded.Connected then
                 pcall(function() bossesConnAdded:Disconnect() end)
                 bossesConnAdded = nil
@@ -903,26 +937,19 @@ do
                 bossesConnRemoving = nil
             end
 
-            -- limpiar bosses
             for model,_ in pairs(bossesTracked) do
                 cleanupBossESP(model)
             end
             bossesTracked = {}
-
-            -- stop players loop flag (no usamos loop de players aquí)
-            playersLoopRunning = false
-
             return
         end
 
-        -- ESP Bosses existentes
         for _,desc in ipairs(workspace:GetDescendants()) do
             if desc:IsA("Model") and normalizedBosses[normalizeName(desc.Name)] then
                 pcall(function() attachBossESP(desc) end)
             end
         end
 
-        -- conectar a nuevos bosses y removals (guardar conexiones para desconectar al apagar)
         if not bossesConnAdded then
             bossesConnAdded = workspace.DescendantAdded:Connect(function(obj)
                 if breinrotEnabled and obj:IsA("Model") and normalizedBosses[normalizeName(obj.Name)] then
@@ -941,13 +968,17 @@ do
     end)
 end
 
--- ✅ Serverhop directo
-createButton("Serverhop", Color3.fromRGB(0,191,255), function()
-    local placeId = game.PlaceId
-    TeleportService:Teleport(placeId, player)
+-- ✅ Serverhop directo (al activar, te cambia de servidor)
+createSwitch("Serverhop", generalFrame, function(state)
+    if state then
+        local placeId = game.PlaceId
+        pcall(function() TeleportService:Teleport(placeId, player) end)
+    end
 end)
 
+-- -----------------------
 -- KeyCheck
+-- -----------------------
 local KEY="keygratis1"
 keyBtn.MouseButton1Click:Connect(function()
     if keyBox.Text==KEY then
@@ -967,5 +998,12 @@ end)
 
 -- Panel toggle
 mainBtn.MouseButton1Click:Connect(function()
-    frame.Visible=not frame.Visible
+    frame.Visible = not frame.Visible
+end)
+
+-- Toggle con tecla Insert
+UserInputService.InputBegan:Connect(function(input, gp)
+    if not gp and input.KeyCode == Enum.KeyCode.Insert then
+        frame.Visible = not frame.Visible
+    end
 end)
