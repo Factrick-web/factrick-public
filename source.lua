@@ -977,24 +977,24 @@ createSwitch("Serverhop", generalFrame, function(state)
 end)
 
 -- -----------------------
--- KeyCheck
--- -----------------------
+-- KeyCheck (fix duplicado)
 local KEY="keygratis1"
 keyBtn.MouseButton1Click:Connect(function()
-    if keyBox.Text==KEY then
-        keyFrame.Visible=false
-        loadingFrame.Visible=true
+    if keyBox.Text == KEY then
+        pcall(function() keyFrame:Destroy() end) -- 🔹 destruir en vez de ocultar
+        loadingFrame.Visible = true
         for i=1,100 do
-            barFill.Size=UDim2.new(i/100,0,1,0)
+            barFill.Size = UDim2.new(i/100,0,1,0)
             task.wait(0.03)
         end
-        loadingFrame.Visible=false
-        mainBtn.Visible=true
+        loadingFrame.Visible = false
+        mainBtn.Visible = true
     else
-        keyBox.Text=""
-        keyBox.PlaceholderText="❌ Key incorrecta"
+        keyBox.Text = ""
+        keyBox.PlaceholderText = "❌ Key incorrecta"
     end
 end)
+
 
 -- Panel toggle
 mainBtn.MouseButton1Click:Connect(function()
