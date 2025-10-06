@@ -93,7 +93,7 @@ discordCorner.CornerRadius = UDim.new(0,8)
 discordCorner.Parent = discordBtn
 
 discordBtn.MouseButton1Click:Connect(function()
-    pcall(function() setclipboard("https://discord.gg/vaaPztfw") end)
+    pcall(function() setclipboard("https://discord.gg/YmBUVD8Z9w") end)
     discordBtn.Text = "✅ Copiado!"
     task.delay(2, function() if discordBtn and discordBtn.Parent then discordBtn.Text = "Unirme al Discord" end end)
 end)
